@@ -2,26 +2,33 @@
 
 import sys
 import logging
-import pandas
 import numpy
 import itertools
+import math
 
 
 OPERATORS = {'+','*','||'}
 # OPERATORS = {'+','*'}
 
-def shunting_yard(infix:list) -> list:
-    """Return the infix arithmetic equation in RPN notation for easier computations
-    """
-    
+def perform_operation(x:int, y:int, op:str) -> str:
+    """Perform the operation on the two operands and return the result.
 
-def perform_operation(x, y, op):
+    >>> perform_operation(100, 99, '||')
+    10099
+    >>> perform_operation(100, 99, '+')
+    199
+    >>> perform_operation(100, 99, '*')
+    9900
+    """
     if op == '+':
         return x + y
-    if op == '*':
+    elif op == '*':
         return x * y
-    if op == '||':
-        return int(str(x) + str(y))
+    elif op == '||':
+        # this is ever so slightly faster than the str -> int concat version
+        return x * 10**(math.floor(math.log10(y))+1) + y
+        # return int(str(x) + str(y))
+    raise ValueError
     
 
 def compute(infix) -> int:
@@ -29,22 +36,20 @@ def compute(infix) -> int:
     precedence, just compute left to right.  This uses a modified shunting yard algorithm
     to parse each operator/operand.
     """
-    operator_stack = []
-    operands_stack = []
+    p_operator = None
+    p_operand = None
     for op in infix:
         if op in OPERATORS:
-            operator_stack.append(op)
+            p_operator = op
         else:
             # We have a number, next check if we have an operator pushed on the stack.
             # If so, then we should be guaranteed this is our second operand and we can
             # compute a value.
-            if len(operator_stack) > 0:
-                n = operands_stack.pop()
-                operator = operator_stack.pop()
-                operands_stack.append(perform_operation(n, op, operator))
+            if p_operator is not None:
+                p_operand = perform_operation(p_operand, op, p_operator)
             else:
-                operands_stack.append(op)
-    return operands_stack.pop()
+                p_operand = op
+    return p_operand
 
 
 def gen_operators(num_operands) -> list:
