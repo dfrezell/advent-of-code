@@ -2,14 +2,12 @@
 
 import os
 import sys
-import numpy
 import itertools
 import math
 from tqdm import tqdm
 from functools import lru_cache
-from operator import add, mul
 
-@lru_cache(maxsize=262144)
+@lru_cache(maxsize=8192)
 def cat(x:int, y:int) -> int:
     """cat takes two numbers and concatenates them so that y is appended to x.
     This function is _slow_, so we add an aggressive cache to help speed things
@@ -18,6 +16,12 @@ def cat(x:int, y:int) -> int:
     # this is ever so slightly faster than the str -> int concat version
     return x * 10**(math.floor(math.log10(y))+1) + y
     # return int(str(x) + str(y))
+
+def add(x:int, y:int) -> int:
+    return x+y
+
+def mul(x:int, y:int) -> int:
+    return x*y
 
 # OPERATORS = {lambda x,y: x+y, lambda x,y: x*y, lambda x,y: cat(x,y)}
 OPERATORS = {add, mul, cat}
@@ -33,7 +37,7 @@ def compute(operands, operators) -> int:
 def process_line(line:str) -> int:
     total, operands = line.split(":")
     total = int(total)
-    operands = numpy.array(operands.split(), int)
+    operands = list(map(int, operands.split()))
     for operators in itertools.product(OPERATORS, repeat=len(operands)-1):
         val = compute(iter(operands), operators)
         if val == total:
