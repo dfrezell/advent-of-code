@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 import sys
-import logging
 import numpy
 import itertools
 import math
-
+from tqdm import tqdm
 
 OPERATORS = {'+','*','||'}
 # OPERATORS = {'+','*'}
@@ -65,32 +65,32 @@ def gen_operators(num_operands) -> list:
     """
     return list(itertools.product(OPERATORS, repeat=num_operands-1))
 
+def process_line(line:str) -> int:
+    total, operands = line.split(":")
+    total = int(total)
+    operands = numpy.array(operands.split(), int)
+    operators = gen_operators(len(operands))
+    for oper in operators:
+        infix = [x for x in itertools.chain.from_iterable(itertools.zip_longest(operands, oper)) if x is not None]
+        val = compute(infix)
+        if val == total:
+            return val
+    return 0
+
 def main():
-    logging.basicConfig(level=logging.INFO)
     if len(sys.argv) < 2:
-        logging.error("missing file args")
+        print("missing file arg")
         return -1
 
     fname = sys.argv[1]
 
     sum = 0
     with open(fname) as fd:
-        pos = 0
-        for line in fd:
-            print("working", pos)
-            line = line.strip()
-            total, operands = line.split(":")
-            total = int(total)
-            operands = numpy.array(operands.split(), int)
-            operators = gen_operators(len(operands))
-            for oper in operators:
-                infix = [x for x in itertools.chain.from_iterable(itertools.zip_longest(operands, oper)) if x is not None]
-                val = compute(infix)
-                if val == total:
-                    sum += total
-                    break
-            pos += 1
-            
+        stbuf = os.fstat(fd.fileno())
+        with tqdm(total=stbuf.st_size) as pbar:
+            for line in fd:
+                sum += process_line(line.strip())
+                pbar.update(len(line))
         print(sum)
 
     return 0
