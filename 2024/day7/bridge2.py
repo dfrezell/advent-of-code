@@ -6,73 +6,36 @@ import numpy
 import itertools
 import math
 from tqdm import tqdm
+from functools import lru_cache
+from operator import add, mul
 
-OPERATORS = {'+','*','||'}
-# OPERATORS = {'+','*'}
-
-def perform_operation(x:int, y:int, op:str) -> str:
-    """Perform the operation on the two operands and return the result.
-
-    >>> perform_operation(100, 99, '||')
-    10099
-    >>> perform_operation(100, 99, '+')
-    199
-    >>> perform_operation(100, 99, '*')
-    9900
+@lru_cache(maxsize=32768)
+def cat(x:int, y:int) -> int:
+    """cat takes two numbers and concatenates them so that y is appended to x.
+    This function is _slow_, so we add an aggressive cache to help speed things
+    up.  For very large inputs, it reduces the time by more than half.
     """
-    if op == '+':
-        return x + y
-    elif op == '*':
-        return x * y
-    elif op == '||':
-        # this is ever so slightly faster than the str -> int concat version
-        return x * 10**(math.floor(math.log10(y))+1) + y
-        # return int(str(x) + str(y))
-    raise ValueError
-    
+    # this is ever so slightly faster than the str -> int concat version
+    return x * 10**(math.floor(math.log10(y))+1) + y
+    # return int(str(x) + str(y))
 
-def compute(infix) -> int:
-    """Compute the equation, which is representing in infix notation.  There is no operator
-    precedence, just compute left to right.  This uses a modified shunting yard algorithm
-    to parse each operator/operand.
-    """
-    p_operator = None
-    p_operand = None
-    for op in infix:
-        if op in OPERATORS:
-            p_operator = op
-        else:
-            # We have a number, next check if we have an operator pushed on the stack.
-            # If so, then we should be guaranteed this is our second operand and we can
-            # compute a value.
-            if p_operator is not None:
-                p_operand = perform_operation(p_operand, op, p_operator)
-            else:
-                p_operand = op
-    return p_operand
+# OPERATORS = {lambda x,y: x+y, lambda x,y: x*y, lambda x,y: cat(x,y)}
+OPERATORS = {add, mul, cat}
+# OPERATORS = {add, mul}
 
-
-def gen_operators(num_operands) -> list:
-    """Return the complete set of operators for a number of operands.
-    We want a list of length num_operands - 1 with a value in the set
-    of possible operators: { '+', '*', '||' }
-    
-    >>> gen_operators(2)
-    [('||',), ('+',), ('*',)]
-
-    >>> gen_operators(3)
-    [('||', '||'), ('||', '+'), ('||', '*'), ('+', '||'), ('+', '+'), ('+', '*'), ('*', '||'), ('*', '+'), ('*', '*')]
-    """
-    return list(itertools.product(OPERATORS, repeat=num_operands-1))
+def compute(operands, operators) -> int:
+    # pop off the first item in operands to have an initial value for x
+    x = next(operands)
+    for op, y in zip(operators, operands):
+        x = op(x,y)
+    return x
 
 def process_line(line:str) -> int:
     total, operands = line.split(":")
     total = int(total)
     operands = numpy.array(operands.split(), int)
-    operators = gen_operators(len(operands))
-    for oper in operators:
-        infix = [x for x in itertools.chain.from_iterable(itertools.zip_longest(operands, oper)) if x is not None]
-        val = compute(infix)
+    for operators in itertools.product(OPERATORS, repeat=len(operands)-1):
+        val = compute(iter(operands), iter(operators))
         if val == total:
             return val
     return 0
