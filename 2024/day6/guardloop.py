@@ -61,19 +61,27 @@ def has_loop(arr, pos, dir):
 
 def check_loop(arr, pos, dir, visited:list):
     looper = []
+    cpos, cdir = pos, dir
     visited.pop(0)
     checked = []
-    for lpos, _ in visited:
+    total = len(visited)
+    for idx, lvec in enumerate(visited):
+        lpos, ldir = lvec
         if lpos in checked:
+            cpos = lpos
+            cdir = ldir
+            print(idx, "/", total, "skipping", lpos)
             continue
         checked.append(lpos)
         arr[lpos] = "#"
-        if has_loop(arr, pos, dir):
+        if has_loop(arr, cpos, cdir):
             looper.append(lpos)
-            print("checking", lpos, "loops")
+            print(idx, "/", total, "checking", lpos, "loops")
         else:
-            print("checking", lpos,"no loop")
+            print(idx, "/", total, "checking", lpos,"no loop")
         arr[lpos] = "."
+        cpos = lpos
+        cdir = ldir
 
     return set(looper)
 
