@@ -9,7 +9,7 @@ from tqdm import tqdm
 from functools import lru_cache
 from operator import add, mul
 
-@lru_cache(maxsize=32768)
+@lru_cache(maxsize=262144)
 def cat(x:int, y:int) -> int:
     """cat takes two numbers and concatenates them so that y is appended to x.
     This function is _slow_, so we add an aggressive cache to help speed things
@@ -35,7 +35,7 @@ def process_line(line:str) -> int:
     total = int(total)
     operands = numpy.array(operands.split(), int)
     for operators in itertools.product(OPERATORS, repeat=len(operands)-1):
-        val = compute(iter(operands), iter(operators))
+        val = compute(iter(operands), operators)
         if val == total:
             return val
     return 0
