@@ -1,0 +1,12 @@
+#!/bin/bash
+
+PYTHON_VERSION="$(cat .python-version)"
+
+# install pyenv
+if [ ! -x "$(command -v pyenv)" ]; then
+    brew install pyenv
+    xcode-select --install
+    brew install openssl readline sqlite3 xz zlib tcl-tk@8
+fi
+
+pyenv install --skip-existing "${PYTHON_VERSION}"
