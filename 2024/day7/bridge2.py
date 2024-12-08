@@ -6,6 +6,7 @@ import itertools
 import math
 from tqdm import tqdm
 from functools import lru_cache
+import concurrent.futures
 
 @lru_cache(maxsize=8192)
 def cat(x:int, y:int) -> int:
@@ -53,12 +54,17 @@ def main():
 
     sum = 0
     with open(fname) as fd:
-        stbuf = os.fstat(fd.fileno())
-        with tqdm(total=stbuf.st_size) as pbar:
-            for line in fd:
-                sum += process_line(line.strip())
-                pbar.update(len(line))
-        print(sum)
+        lines = fd.read().splitlines()
+        with tqdm(total=len(lines)) as pbar:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+                futures = []
+                for line in lines:
+                    futures.append(executor.submit(process_line, line))
+                for future in concurrent.futures.as_completed(futures):
+                    sum += future.result()
+                    pbar.update(1)
+
+    print(sum)
 
     return 0
 
